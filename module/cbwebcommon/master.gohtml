@@ -1,0 +1,65 @@
+{{- /*gotype: github.com/codingbeard/cbweb.MasterViewModelTypeHinting*/ -}}
+<html>
+<head>
+  <!--Import Google Icon Font-->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!--Import materialize.css-->
+  <link type="text/css" rel="stylesheet" href="{{ getCdnUrlString "/css/main.min.css" }}"  media="screen,projection"/>
+
+  <!--Let browser know website is optimized for mobile-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    {{- range .GetViewIncludes }}
+        {{- if .Type.IsCssHead }}
+  <link type="text/css" rel="stylesheet" href="{{ getCdnUrlTemplateURL .Src }}">
+        {{- else if .Type.IsCssHeadInline }}
+  <style>
+    {{ .Css }}
+  </style>
+        {{- else if .Type.IsJsHead }}
+  <script type="text/javascript" src="{{ getCdnUrlTemplateURL .Src }}"></script>
+        {{- else if .Type.IsJsHeadInline }}
+  <script type="text/javascript">
+    {{ .Js }}
+  </script>
+        {{- end }}
+    {{- end }}
+  <title>{{.GetTitle}}</title>
+</head>
+<body>
+
+{{- range .GetViewIncludes }}
+    {{- if .Type.IsCssBody }}
+  <link type="text/css" rel="stylesheet" href="{{ getCdnUrlTemplateURL .Src }}">
+    {{- else if .Type.IsCssHeadInline }}
+  <style>
+    {{ .Css }}
+  </style>
+    {{- else if .Type.IsJsBody }}
+  <script type="text/javascript" src="{{ getCdnUrlTemplateURL .Src }}"></script>
+    {{- else if .Type.IsJsBodyInline }}
+  <script type="text/javascript">
+      {{ .Js }}
+  </script>
+    {{- end }}
+{{- end }}
+  {{- template "content" . -}}
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+  <!--JavaScript at end of body for optimized loading-->
+  <script type="text/javascript" src="{{ getCdnUrlString "/js/libraries.min.js" }}"></script>
+{{- range .GetViewIncludes }}
+    {{- if .Type.IsJsPostBody }}
+  <script type="text/javascript" src="{{ getCdnUrlTemplateURL .Src }}"></script>
+    {{- else if .Type.IsJsPostBodyInline }}
+  <script type="text/javascript">
+    {{ .Js }}
+  </script>
+    {{- end }}
+{{- end }}
+<script type="text/javascript">
+  $(document).ready(function(){
+    $('.sidenav').sidenav();
+  });
+</script>
+</body>
+
+</html>

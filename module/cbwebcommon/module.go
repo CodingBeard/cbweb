@@ -38,6 +38,7 @@ type FileOpener interface {
 
 type ErrorHandler interface {
 	Error(e error)
+	Recover()
 }
 
 type DefaultErrorHandler struct{}

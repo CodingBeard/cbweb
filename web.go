@@ -1,9 +1,15 @@
 package cbweb
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"html/template"
+	"log"
+	"runtime"
+	"strings"
 )
 
 type Module interface {
@@ -12,9 +18,43 @@ type Module interface {
 	SetGlobalTemplates(templates map[string][]byte)
 }
 
+type ErrorHandler interface {
+	Error(e error)
+	Recover()
+}
+
+type DefaultErrorHandler struct{}
+
+func (d DefaultErrorHandler) Error(e error) {
+	buf := make([]byte, 1000000)
+	runtime.Stack(buf, false)
+	buf = bytes.Trim(buf, "\x00")
+	stack := string(buf)
+	stackParts := strings.Split(stack, "\n")
+	newStackParts := []string{stackParts[0]}
+	newStackParts = append(newStackParts, stackParts[3:]...)
+	stack = strings.Join(newStackParts, "\n")
+	log.Println("ERROR", e.Error()+"\n"+stack)
+}
+
+func (d DefaultErrorHandler) Recover() {
+	e := recover()
+
+	if e != nil {
+		err, ok := e.(error)
+
+		if ok {
+			d.Error(err)
+		} else {
+			d.Error(errors.New(fmt.Sprint(e)))
+		}
+	}
+}
+
 type Server struct {
 	port string
 	modules []Module
+	errorHandler ErrorHandler
 }
 
 type ViewIncludeType string
@@ -58,9 +98,18 @@ func (m MasterViewModelTypeHinting) GetTitle() string {
 	panic("implement me")
 }
 
-func NewServer(port string, modules ...Module) *Server {
+type Dependencies struct {
+	Port string
+	ErrorHandler ErrorHandler
+}
+
+func NewServer(dependencies Dependencies, modules ...Module) *Server {
+	if dependencies.ErrorHandler == nil {
+		dependencies.ErrorHandler = &DefaultErrorHandler{}
+	}
 	return &Server{
-		port: port,
+		port: dependencies.Port,
+		errorHandler: dependencies.ErrorHandler,
 		modules:modules,
 	}
 }
@@ -85,7 +134,10 @@ func (s *Server) Start() error {
 		module.SetGlobalTemplates(globalTemplates)
 	}
 
-	e := fasthttp.ListenAndServe(s.port, routes.Handler)
+	e := fasthttp.ListenAndServe(s.port, func(ctx *fasthttp.RequestCtx) {
+		s.errorHandler.Recover()
+		routes.Handler(ctx)
+	})
 
 	return e
 }

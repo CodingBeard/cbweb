@@ -9,18 +9,28 @@ type Provider interface {
 	GetProviderName() string
 	GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string
 	IsAuthenticated(ctx *fasthttp.RequestCtx) bool
-	Login(ctx *fasthttp.RequestCtx) bool
+	Login(ctx *fasthttp.RequestCtx) (bool, []error)
 	Logout(ctx *fasthttp.RequestCtx) bool
-	Register(ctx *fasthttp.RequestCtx) bool
+	Register(ctx *fasthttp.RequestCtx) (bool, []error)
 }
 
 type Container struct {
 	providers []Provider
+	unauthorisedRedirectUri string
+	logoutRedirectUri string
 }
 
-func New(providers ...Provider) *Container {
+type Config struct {
+	Providers []Provider
+	UnauthorisedRedirectUri string
+	LogoutRedirectUri string
+}
+
+func New(config Config) *Container {
 	container := &Container{
-		providers: providers,
+		providers: config.Providers,
+		unauthorisedRedirectUri: config.UnauthorisedRedirectUri,
+		logoutRedirectUri: config.LogoutRedirectUri,
 	}
 
 	return container
@@ -35,6 +45,10 @@ func (c *Container) AuthMiddleware(ctx *fasthttp.RequestCtx) (bool, error) {
 		if provider.IsAuthenticated(ctx) {
 			return true, nil
 		}
+	}
+
+	if c.unauthorisedRedirectUri != "" {
+		ctx.Redirect(c.unauthorisedRedirectUri, 302)
 	}
 
 	return false, nil
@@ -68,32 +82,34 @@ func (c *Container) IsAuthenticated(providerName string, ctx *fasthttp.RequestCt
 	return false, errors.New("auth provider not found")
 }
 
-func (c *Container) Login(providerName string, ctx *fasthttp.RequestCtx) (bool, error) {
+func (c *Container) Login(providerName string, ctx *fasthttp.RequestCtx) (bool, error, []error) {
 	if len(c.providers) == 0 {
-		return true, errors.New("no auth providers configured")
+		return true, errors.New("no auth providers configured"), []error{}
 	}
 
 	for _, provider := range c.providers {
 		if provider.GetProviderName() == providerName {
-			return provider.Login(ctx), nil
+			loginSuccess, userErrors := provider.Login(ctx)
+			return loginSuccess, nil, userErrors
 		}
 	}
 
-	return false, errors.New("auth provider not found")
+	return false, errors.New("auth provider not found"), []error{}
 }
 
-func (c *Container) Register(providerName string, ctx *fasthttp.RequestCtx) (bool, error) {
+func (c *Container) Register(providerName string, ctx *fasthttp.RequestCtx) (bool, error, []error) {
 	if len(c.providers) == 0 {
-		return true, errors.New("no auth providers configured")
+		return true, errors.New("no auth providers configured"), []error{}
 	}
 
 	for _, provider := range c.providers {
 		if provider.GetProviderName() == providerName {
-			return provider.Register(ctx), nil
+			registerSuccess, userErrors := provider.Register(ctx)
+			return registerSuccess, nil, userErrors
 		}
 	}
 
-	return false, errors.New("auth provider not found")
+	return false, errors.New("auth provider not found"), []error{}
 }
 
 func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx) (bool, error) {
@@ -103,7 +119,13 @@ func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx) (bool,
 
 	for _, provider := range c.providers {
 		if provider.GetProviderName() == providerName {
-			return provider.Logout(ctx), nil
+			e := provider.Logout(ctx)
+
+			if c.logoutRedirectUri != "" {
+				ctx.Redirect(c.logoutRedirectUri, 302)
+			}
+
+			return e, nil
 		}
 	}
 

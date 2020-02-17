@@ -1,6 +1,8 @@
 package cbweb
 
 import (
+	"github.com/didip/tollbooth/config"
+	"github.com/didip/tollbooth_fasthttp"
 	"github.com/valyala/fasthttp"
 )
 
@@ -11,6 +13,7 @@ type Profiler interface {
 
 type MiddlewareHandler struct {
 	ErrorHandler ErrorHandler
+	Limiter      *config.Limiter
 	middleware   []func(ctx *fasthttp.RequestCtx) (bool, error)
 	final        func(ctx *fasthttp.RequestCtx)
 	afterFinal   []func(ctx *fasthttp.RequestCtx) (bool, error)
@@ -76,6 +79,14 @@ func (m MiddlewareHandler) Handle(ctx *fasthttp.RequestCtx) {
 	if m.profiler != nil {
 		m.profiler.End()
 	}
+}
+
+func (m MiddlewareHandler) HandleLimited() fasthttp.RequestHandler {
+	if m.Limiter != nil {
+		return tollbooth_fasthttp.LimitHandler(m.Handle, m.Limiter)
+	}
+
+	return m.Handle
 }
 
 func HtmlMiddleware(ctx *fasthttp.RequestCtx) (bool, error) {

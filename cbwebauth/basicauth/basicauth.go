@@ -56,8 +56,8 @@ func (p Provider) IsAuthenticated(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
-func (p Provider) Login(ctx *fasthttp.RequestCtx) bool {
-	return true
+func (p Provider) Login(ctx *fasthttp.RequestCtx) (bool, []error) {
+	return true, []error{}
 }
 
 func (p Provider) Logout(ctx *fasthttp.RequestCtx) bool {
@@ -67,8 +67,8 @@ func (p Provider) Logout(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
-func (p Provider) Register(ctx *fasthttp.RequestCtx) bool {
-	return true
+func (p Provider) Register(ctx *fasthttp.RequestCtx) (bool, []error) {
+	return true, []error{}
 }
 
 func (p Provider) getCredentials(ctx *fasthttp.RequestCtx) (string, string) {

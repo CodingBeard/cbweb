@@ -15,22 +15,22 @@ type Provider interface {
 }
 
 type Container struct {
-	providers []Provider
+	providers               []Provider
 	unauthorisedRedirectUri string
-	logoutRedirectUri string
+	logoutRedirectUri       string
 }
 
 type Config struct {
-	Providers []Provider
+	Providers               []Provider
 	UnauthorisedRedirectUri string
-	LogoutRedirectUri string
+	LogoutRedirectUri       string
 }
 
 func New(config Config) *Container {
 	container := &Container{
-		providers: config.Providers,
+		providers:               config.Providers,
 		unauthorisedRedirectUri: config.UnauthorisedRedirectUri,
-		logoutRedirectUri: config.LogoutRedirectUri,
+		logoutRedirectUri:       config.LogoutRedirectUri,
 	}
 
 	return container
@@ -44,6 +44,11 @@ func (c *Container) AuthMiddleware(ctx *fasthttp.RequestCtx) (bool, error) {
 	for _, provider := range c.providers {
 		if provider.IsAuthenticated(ctx) {
 			return true, nil
+		} else {
+			ok, _ := provider.Login(ctx)
+			if ok {
+				return true, nil
+			}
 		}
 	}
 
@@ -119,13 +124,13 @@ func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx) (bool,
 
 	for _, provider := range c.providers {
 		if provider.GetProviderName() == providerName {
-			e := provider.Logout(ctx)
+			ok := provider.Logout(ctx)
 
 			if c.logoutRedirectUri != "" {
 				ctx.Redirect(c.logoutRedirectUri, 302)
 			}
 
-			return e, nil
+			return ok, nil
 		}
 	}
 

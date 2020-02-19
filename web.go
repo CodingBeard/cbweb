@@ -85,6 +85,7 @@ type ViewInclude struct {
 type MasterViewModel interface {
 	GetViewIncludes() []ViewInclude
 	GetTitle() string
+	GetPageTitle() string
 }
 
 // This is here purely for typehinting in go template files
@@ -95,6 +96,10 @@ func (m MasterViewModelTypeHinting) GetViewIncludes() []ViewInclude {
 }
 
 func (m MasterViewModelTypeHinting) GetTitle() string {
+	panic("implement me")
+}
+
+func (m MasterViewModelTypeHinting) GetPageTitle() string {
 	panic("implement me")
 }
 

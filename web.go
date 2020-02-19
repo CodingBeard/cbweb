@@ -52,8 +52,8 @@ func (d DefaultErrorHandler) Recover() {
 }
 
 type Server struct {
-	port string
-	modules []Module
+	port         string
+	modules      []Module
 	errorHandler ErrorHandler
 }
 
@@ -104,7 +104,7 @@ func (m MasterViewModelTypeHinting) GetPageTitle() string {
 }
 
 type Dependencies struct {
-	Port string
+	Port         string
 	ErrorHandler ErrorHandler
 }
 
@@ -113,9 +113,9 @@ func NewServer(dependencies Dependencies, modules ...Module) *Server {
 		dependencies.ErrorHandler = &DefaultErrorHandler{}
 	}
 	return &Server{
-		port: dependencies.Port,
+		port:         dependencies.Port,
 		errorHandler: dependencies.ErrorHandler,
-		modules:modules,
+		modules:      modules,
 	}
 }
 
@@ -140,7 +140,7 @@ func (s *Server) Start() error {
 	}
 
 	e := fasthttp.ListenAndServe(s.port, func(ctx *fasthttp.RequestCtx) {
-		s.errorHandler.Recover()
+		defer s.errorHandler.Recover()
 		routes.Handler(ctx)
 	})
 

@@ -7,7 +7,6 @@ import (
 	"github.com/codingbeard/cbweb/templates"
 	"github.com/valyala/fasthttp"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -102,20 +101,21 @@ func (m *Module) DefaultFileServer(ctx *fasthttp.RequestCtx) {
 		m.FiveHundredError(ctx)
 		return
 	}
-	defer f.Close()
 	stat, e := f.Stat()
 	if e != nil {
 		m.ErrorHandler.Error(e)
 		m.FiveHundredError(ctx)
 		return
 	}
-	ctx.Response.Header.Set("Content-Type", mime.TypeByExtension(filepath.Ext(stat.Name())))
-	_, e = io.Copy(ctx, f)
-	if e != nil {
-		m.ErrorHandler.Error(e)
-		m.FiveHundredError(ctx)
+	if !ctx.IfModifiedSince(stat.ModTime()) {
+		ctx.NotModified()
 		return
 	}
+	ctx.Response.Header.SetLastModified(stat.ModTime())
+	ctx.Response.Header.Set("Cache-Control", "max-age=31536000")
+	ctx.Response.Header.Set("Content-Type", mime.TypeByExtension(filepath.Ext(stat.Name())))
+	ctx.Response.Header.SetContentLength(int(stat.Size()))
+	ctx.SetBodyStream(f, int(stat.Size()))
 }
 
 func (m *Module) GenerateTemplate(fileNames []string) (*templates.InheritanceMultiTemplate, error) {
@@ -178,7 +178,7 @@ func (m *Module) getDefaultCdnUrl(nonCdnUrl string) string {
 		return nonCdnUrl + "?" + strconv.Itoa(int(time.Now().Unix()))
 	} else {
 		//todo cdn
-		return nonCdnUrl
+		return nonCdnUrl + "?" + m.Version
 	}
 }
 

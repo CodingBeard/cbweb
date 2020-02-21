@@ -7,6 +7,7 @@ import (
 	"github.com/codingbeard/cbweb/templates"
 	"github.com/valyala/fasthttp"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -101,21 +102,20 @@ func (m *Module) DefaultFileServer(ctx *fasthttp.RequestCtx) {
 		m.FiveHundredError(ctx)
 		return
 	}
+	defer f.Close()
 	stat, e := f.Stat()
 	if e != nil {
 		m.ErrorHandler.Error(e)
 		m.FiveHundredError(ctx)
 		return
 	}
-	fileBytes := make([]byte, stat.Size())
-	_, e = f.Read(fileBytes)
+	ctx.Response.Header.Set("Content-Type", mime.TypeByExtension(filepath.Ext(stat.Name())))
+	_, e = io.Copy(ctx, f)
 	if e != nil {
 		m.ErrorHandler.Error(e)
 		m.FiveHundredError(ctx)
 		return
 	}
-	ctx.Response.Header.Set("Content-Type", mime.TypeByExtension(filepath.Ext(stat.Name())))
-	_, _ = fmt.Fprint(ctx, string(fileBytes))
 }
 
 func (m *Module) GenerateTemplate(fileNames []string) (*templates.InheritanceMultiTemplate, error) {

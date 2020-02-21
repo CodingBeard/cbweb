@@ -86,6 +86,7 @@ type MasterViewModel interface {
 	GetViewIncludes() []ViewInclude
 	GetTitle() string
 	GetPageTitle() string
+	GetBodyClasses() string
 }
 
 // This is here purely for typehinting in go template files
@@ -100,6 +101,10 @@ func (m MasterViewModelTypeHinting) GetTitle() string {
 }
 
 func (m MasterViewModelTypeHinting) GetPageTitle() string {
+	panic("implement me")
+}
+
+func (m MasterViewModelTypeHinting) GetBodyClasses() string {
 	panic("implement me")
 }
 

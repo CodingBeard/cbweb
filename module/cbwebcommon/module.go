@@ -21,6 +21,7 @@ import (
 type Module struct {
 	Env              string
 	Version          string
+	BrandName        string
 	FileServer       func(ctx *fasthttp.RequestCtx)
 	FourOFourError   func(ctx *fasthttp.RequestCtx)
 	FiveHundredError func(ctx *fasthttp.RequestCtx)
@@ -65,7 +66,6 @@ func (d defaultLogger) InfoF(category string, message string, args ...interface{
 	log.Println(category+":", fmt.Sprintf(message, args...))
 }
 
-
 func (m *Module) SetDefaultHandlers() {
 	m.FileServer = m.DefaultFileServer
 	m.FourOFourError = m.DefaultFourOFourError
@@ -79,6 +79,8 @@ func (m *Module) GetFiveHundredError() func(ctx *fasthttp.RequestCtx) {
 func (m *Module) GetGlobalTemplates() map[string][]byte {
 	return map[string][]byte{
 		"-global-/cbwebcommon/master.gohtml": getGlobalMasterTemplate(),
+		"-global-/cbwebcommon/nav.gohtml": getGlobalNavTemplate(),
+		"-global-/cbwebcommon/flash.gohtml": getGlobalFlashTemplate(),
 	}
 }
 
@@ -166,6 +168,7 @@ func (m *Module) getDefaultTemplateFuncs() template.FuncMap {
 		"getCdnUrlString":      m.getDefaultCdnUrl,
 		"getCdnUrlTemplateURL": m.getDefaultCdnUrlTemplateUrl,
 		"getVersionString":     m.getDefaultVersionString,
+		"getBrandName":         m.getDefaultBrandName,
 	}
 }
 
@@ -184,6 +187,10 @@ func (m *Module) getDefaultCdnUrl(nonCdnUrl string) string {
 
 func (m *Module) getDefaultVersionString() string {
 	return m.Version
+}
+
+func (m *Module) getDefaultBrandName() string {
+	return m.BrandName
 }
 
 func (m *Module) DefaultFiveHundredError(ctx *fasthttp.RequestCtx) {

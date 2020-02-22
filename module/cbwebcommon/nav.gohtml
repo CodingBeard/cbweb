@@ -1,0 +1,44 @@
+{{- /*gotype: github.com/codingbeard/cbweb.TypehintingViewModel*/ -}}
+{{ define "-global-/cbwebcommon/nav.gohtml" }}
+  <div class="navbar-fixed hide-on-large-only">
+    <nav>
+      <div class="nav-wrapper">
+        <div class="row">
+          <div class="col s12">
+            <a href="#" data-target="slide-out" class="sidenav-trigger hide-on-large-only show-on-small">
+              <i class="material-icons">menu</i>
+            </a>
+            <span class="brand-logo hide-on-large-only show-on-small">{{ .GetMasterViewModel.GetPageTitle }}</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <ul id="slide-out" class="sidenav sidenav-fixed">
+    <li>
+      <a href="/" class="brand-logo">{{ getBrandName }}
+        <span class="hide-on-small-only version">
+			  v{{ getVersionString }}
+      </span>
+      </a>
+    </li>
+      {{ $path := .GetMasterViewModel.GetPath }}
+      {{ range .GetMasterViewModel.GetNavItems }}
+          {{ if eq (len .SubNavItems) 0 }}
+            <li class="{{ if or .Active (eq $path .Src) }}active{{ end }}">
+              <a href="{{ .Src }}">{{ .Title }}</a>
+            </li>
+          {{ else }}
+            <li>
+              <a class="subheader">{{ .Title }}</a>
+            </li>
+            {{ range .SubNavItems }}
+              <li class="{{ if or .Active (eq $path .Src) }}active{{ end }}">
+                <a href="{{ .Src }}">{{ .Title }}</a>
+              </li>
+            {{ end }}
+          {{ end }}
+      {{ end }}
+  </ul>
+{{ end }}

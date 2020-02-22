@@ -81,31 +81,94 @@ type ViewInclude struct {
 	Css       template.CSS
 }
 
+type NavItem struct {
+	Src template.URL
+	Title string
+	Active bool
+	SubNavItems []NavItem
+	Divider bool
+}
+
+type FlashMessage struct {
+	Type    string
+	Message string
+}
+
+type Flash struct {
+	Messages map[string][]FlashMessage
+}
+
+func (f *Flash) AddMessage(group string, message FlashMessage) {
+	if f.Messages == nil {
+		f.Messages = make(map[string][]FlashMessage)
+	}
+	f.Messages[group] = append(f.Messages[group], message)
+}
+
+func (f *Flash) GetMessages(group string) []FlashMessage {
+	if f.Messages == nil {
+		f.Messages = make(map[string][]FlashMessage)
+	}
+
+	messages := f.Messages[group]
+
+	delete(f.Messages, group)
+
+	return messages
+}
+
+func (f *Flash) HasMessages(group string) bool {
+	if f.Messages == nil {
+		return false
+	}
+
+	return len(f.Messages[group]) > 0
+}
+
 //todo nav generation
 type MasterViewModel interface {
-	GetViewIncludes() []ViewInclude
-	GetTitle() string
-	GetPageTitle() string
-	GetBodyClasses() string
+	GetMasterViewModel() DefaultMasterViewModel
+}
+
+type DefaultMasterViewModel struct {
+	ViewIncludes []ViewInclude
+	Title string
+	PageTitle string
+	BodyClasses string
+	NavItems []NavItem
+	Path template.URL
+	Flash *Flash
+}
+
+func (m DefaultMasterViewModel) GetViewIncludes() []ViewInclude {
+	return m.ViewIncludes
+}
+
+func (m DefaultMasterViewModel) GetTitle() string {
+	return m.Title
+}
+
+func (m DefaultMasterViewModel) GetPageTitle() string {
+	return m.PageTitle
+}
+
+func (m DefaultMasterViewModel) GetBodyClasses() string {
+	return m.BodyClasses
+}
+
+func (m DefaultMasterViewModel) GetNavItems() []NavItem {
+	return m.NavItems
+}
+
+func (m DefaultMasterViewModel) GetPath() template.URL {
+	return m.Path
 }
 
 // This is here purely for typehinting in go template files
-type MasterViewModelTypeHinting struct{}
+type TypehintingViewModel struct{}
 
-func (m MasterViewModelTypeHinting) GetViewIncludes() []ViewInclude {
-	panic("implement me")
-}
-
-func (m MasterViewModelTypeHinting) GetTitle() string {
-	panic("implement me")
-}
-
-func (m MasterViewModelTypeHinting) GetPageTitle() string {
-	panic("implement me")
-}
-
-func (m MasterViewModelTypeHinting) GetBodyClasses() string {
-	panic("implement me")
+func (t TypehintingViewModel) GetMasterViewModel() DefaultMasterViewModel {
+	return DefaultMasterViewModel{}
 }
 
 type Dependencies struct {

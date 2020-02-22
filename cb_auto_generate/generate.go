@@ -23,6 +23,20 @@ func main() {
 			OutputPackageName:  "cbwebcommon",
 			OutputFunctionName: "getGlobalMasterTemplate",
 		},
+		{
+			FileName:           "nav.gohtml",
+			FilePath:           "../module/cbwebcommon/nav.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalnavtemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalNavTemplate",
+		},
+		{
+			FileName:           "flash.gohtml",
+			FilePath:           "../module/cbwebcommon/flash.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalflashtemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalFlashTemplate",
+		},
 	}
 
 	for _, file := range files {

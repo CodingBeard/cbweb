@@ -125,7 +125,6 @@ func (f *Flash) HasMessages(group string) bool {
 	return len(f.Messages[group]) > 0
 }
 
-//todo nav generation
 type MasterViewModel interface {
 	GetMasterViewModel() DefaultMasterViewModel
 }

@@ -9,9 +9,9 @@ type Provider interface {
 	GetProviderName() string
 	GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string
 	IsAuthenticated(ctx *fasthttp.RequestCtx) bool
-	Login(ctx *fasthttp.RequestCtx) (bool, []error)
+	Login(ctx *fasthttp.RequestCtx) (bool, map[string]error)
 	Logout(ctx *fasthttp.RequestCtx) bool
-	Register(ctx *fasthttp.RequestCtx) (bool, []error)
+	Register(ctx *fasthttp.RequestCtx) (bool, map[string]error)
 }
 
 type Container struct {
@@ -87,9 +87,9 @@ func (c *Container) IsAuthenticated(providerName string, ctx *fasthttp.RequestCt
 	return false, errors.New("auth provider not found")
 }
 
-func (c *Container) Login(providerName string, ctx *fasthttp.RequestCtx) (bool, error, []error) {
+func (c *Container) Login(providerName string, ctx *fasthttp.RequestCtx) (bool, error, map[string]error) {
 	if len(c.providers) == 0 {
-		return true, errors.New("no auth providers configured"), []error{}
+		return true, errors.New("no auth providers configured"), make(map[string]error)
 	}
 
 	for _, provider := range c.providers {
@@ -99,12 +99,12 @@ func (c *Container) Login(providerName string, ctx *fasthttp.RequestCtx) (bool, 
 		}
 	}
 
-	return false, errors.New("auth provider not found"), []error{}
+	return false, errors.New("auth provider not found"), make(map[string]error)
 }
 
-func (c *Container) Register(providerName string, ctx *fasthttp.RequestCtx) (bool, error, []error) {
+func (c *Container) Register(providerName string, ctx *fasthttp.RequestCtx) (bool, error, map[string]error) {
 	if len(c.providers) == 0 {
-		return true, errors.New("no auth providers configured"), []error{}
+		return true, errors.New("no auth providers configured"), make(map[string]error)
 	}
 
 	for _, provider := range c.providers {
@@ -114,7 +114,7 @@ func (c *Container) Register(providerName string, ctx *fasthttp.RequestCtx) (boo
 		}
 	}
 
-	return false, errors.New("auth provider not found"), []error{}
+	return false, errors.New("auth provider not found"), make(map[string]error)
 }
 
 func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx) (bool, error) {

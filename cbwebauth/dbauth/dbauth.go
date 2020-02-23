@@ -3,7 +3,6 @@ package dbauth
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/codingbeard/checkmail"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
@@ -162,23 +161,22 @@ func (a *Provider) IsAuthenticated(ctx *fasthttp.RequestCtx) bool {
 	return a.getUserFromLoginToken(string(cookie)) != nil
 }
 
-func (a *Provider) Login(ctx *fasthttp.RequestCtx) (bool, []error) {
+func (a *Provider) Login(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 	a.reloadUsers()
-	a.log.InfoF("debug", "Attempting login %s", fmt.Sprint(ctx.Request.URI().QueryArgs()))
 	post := ctx.Request.PostArgs()
 	if post != nil && post.Len() > 0 {
-		var validationErrors []error
+		validationErrors := make(map[string]error)
 
 		if !post.Has("email") {
-			validationErrors = append(validationErrors, errors.New("please provide an email"))
+			validationErrors["email"] = errors.New("please provide an email")
 		}
 
 		if !post.Has("password") {
-			validationErrors = append(validationErrors, errors.New("please provide a password"))
+			validationErrors["password"] = errors.New("please provide a password")
 		}
 
 		if checkmail.ValidateFormat(string(post.Peek("email"))) != nil {
-			validationErrors = append(validationErrors, errors.New("please provide a valid email"))
+			validationErrors["email"] = errors.New("please provide a valid email")
 		}
 
 		if len(validationErrors) > 0 {
@@ -190,30 +188,28 @@ func (a *Provider) Login(ctx *fasthttp.RequestCtx) (bool, []error) {
 				if bcrypt.CompareHashAndPassword([]byte(user.GetPassword()), post.Peek("password")) == nil {
 					e := a.SetAuthCookie(ctx, user)
 					if e != nil {
-						return false, []error{errors.New("error setting auth cookie")}
+						return false, map[string]error{"flash": errors.New("error setting auth cookie")}
 					}
-					return true, []error{}
+					return true, validationErrors
 				} else {
-					return false, []error{errors.New("invalid password")}
+					return false, map[string]error{"password": errors.New("invalid password")}
 				}
 			}
 		}
-		return false, []error{errors.New("user not found")}
+		return false, map[string]error{"email": errors.New("user not found")}
 	} else if ctx.Request.URI().QueryArgs().Has("dbauthtoken") {
-		a.log.InfoF("debug", "Has query")
 		user := a.getUserFromLoginToken(string(ctx.Request.URI().QueryArgs().Peek("dbauthtoken")))
 		if user != nil {
-			a.log.InfoF("debug", "Has user")
 			e := a.SetAuthCookie(ctx, user)
 			if e != nil {
-				return false, []error{errors.New("error setting auth cookie")}
+				return false, map[string]error{"flash": errors.New("error setting auth cookie")}
 			}
-			return true, []error{}
+			return true, make(map[string]error)
 		}
-		return false, []error{errors.New("user not found")}
+		return false, map[string]error{"email": errors.New("user not found")}
 	}
 
-	return false, []error{errors.New("invalid request")}
+	return false, map[string]error{"flash": errors.New("invalid request")}
 }
 
 func (a *Provider) SetAuthCookie(ctx *fasthttp.RequestCtx, user UserRecord) error {
@@ -243,33 +239,33 @@ func (a *Provider) Logout(ctx *fasthttp.RequestCtx) bool {
 	return true
 }
 
-func (a *Provider) Register(ctx *fasthttp.RequestCtx) (bool, []error) {
+func (a *Provider) Register(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 	a.reloadUsers()
 	post := ctx.Request.PostArgs()
 	if post == nil {
-		return false, []error{errors.New("invalid request")}
+		return false, map[string]error{"flash": errors.New("invalid request")}
 	}
 
-	var validationErrors []error
+	validationErrors := make(map[string]error)
 
 	if !post.Has("email") {
-		validationErrors = append(validationErrors, errors.New("please provide an email"))
+		validationErrors["email"] = errors.New("please provide an email")
 	}
 
 	if !post.Has("password") {
-		validationErrors = append(validationErrors, errors.New("please provide a password"))
+		validationErrors["password"] = errors.New("please provide a password")
 	}
 
 	if !post.Has("password-confirm") {
-		validationErrors = append(validationErrors, errors.New("please confirm your password"))
+		validationErrors["password-confirm"] = errors.New("please confirm your password")
 	}
 
 	if checkmail.ValidateFormat(string(post.Peek("email"))) != nil {
-		validationErrors = append(validationErrors, errors.New("please provide a valid email"))
+		validationErrors["email"] = errors.New("please provide a valid email")
 	}
 
 	if bytes.Compare(post.Peek("password"), post.Peek("password-confirm")) != 0 {
-		validationErrors = append(validationErrors, errors.New("please make sure your password confirmation matches your password"))
+		validationErrors["password-confirm"] = errors.New("please make sure your password confirmation matches your password")
 	}
 
 	if len(validationErrors) > 0 {
@@ -277,7 +273,7 @@ func (a *Provider) Register(ctx *fasthttp.RequestCtx) (bool, []error) {
 	}
 
 	if checkmail.ValidateHost(string(post.Peek("email"))) != nil {
-		validationErrors = append(validationErrors, errors.New("please provide a real email account"))
+		validationErrors["email"] = errors.New("please provide a real email account")
 	}
 
 	if len(validationErrors) > 0 {

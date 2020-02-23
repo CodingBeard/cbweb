@@ -66,7 +66,7 @@ func (d defaultLogger) InfoF(category string, message string, args ...interface{
 	log.Println(category+":", fmt.Sprintf(message, args...))
 }
 
-func (m *Module) SetDefaultHandlers() {
+func (m *Module) SetDefaults() {
 	m.FileServer = m.DefaultFileServer
 	m.FourOFourError = m.DefaultFourOFourError
 	m.FiveHundredError = m.DefaultFiveHundredError

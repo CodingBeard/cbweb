@@ -37,6 +37,13 @@ func main() {
 			OutputPackageName:  "cbwebcommon",
 			OutputFunctionName: "getGlobalFlashTemplate",
 		},
+		{
+			FileName:           "inputtext.gohtml",
+			FilePath:           "../module/cbwebcommon/inputtext.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalinputtexttemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalInputTextTemplate",
+		},
 	}
 
 	for _, file := range files {

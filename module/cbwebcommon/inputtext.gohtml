@@ -1,0 +1,8 @@
+{{- /*gotype: github.com/codingbeard/cbweb/cbform.Field*/ -}}
+{{ define "-global-/cbwebcommon/inputtext.gohtml" }}
+    {{if len .GetName}}
+      <input class="validate{{if .HasError}} invalid{{end}}" type="{{.GetType}}" name="{{.GetName}}" id="form-{{.GetName}}" value="{{.GetValue}}"/>
+      <label for="form-{{.GetName}}">{{.GetLabel}}</label>
+      <span class="helper-text" data-error="{{if .HasError}}{{.GetError}}{{else}}{{.GetJsValidationError}}{{end}}" data-success="{{.GetJsValidationSuccess}}"></span>
+    {{end}}
+{{ end }}

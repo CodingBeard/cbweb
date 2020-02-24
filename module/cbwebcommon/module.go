@@ -81,6 +81,7 @@ func (m *Module) GetGlobalTemplates() map[string][]byte {
 		"-global-/cbwebcommon/master.gohtml": getGlobalMasterTemplate(),
 		"-global-/cbwebcommon/nav.gohtml": getGlobalNavTemplate(),
 		"-global-/cbwebcommon/flash.gohtml": getGlobalFlashTemplate(),
+		"-global-/cbwebcommon/inputtext.gohtml": getGlobalInputTextTemplate(),
 	}
 }
 

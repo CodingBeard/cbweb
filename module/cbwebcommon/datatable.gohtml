@@ -33,13 +33,13 @@
       buttons: [
         {
           extend:   'csv',
+          filename: '{{.GetTableId}}',
           text:     '<i class="material-icons">file_download</i>'
         }
       ],
       bAutoWidth:  false
     }
   );
-  console.log({{.GetTableId}}.dom);
 
   $('.dataTables_filter').remove();
 

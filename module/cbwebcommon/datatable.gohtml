@@ -49,7 +49,7 @@
   // stores all active filters
   var filters = {};
   // filted out columnFilter query objects which could have been pasted in from link so we can remove them if the filter is changed
-  var preExistingUrl = window.location.href.replace(/columnFilter\[.+]=[^&]/g, '');
+  var preExistingUrl = window.location.href.replace(/columnFilter\[[^\]]+\]=[^&]+/g, '');
 
   // attach the filter function to each of the inputs
   {{.GetTableId}}.columns().eq(0).each(
@@ -79,7 +79,7 @@
   $.each(query, function (k, v) {
     if (k.indexOf('columnFilter[') !== -1)
     {
-      var columnName = k.replace(/columnFilter\[(.*)]/g, "$1");
+      var columnName = k.replace(/columnFilter\[([^\]]+)\]/g, "$1");
 
       if (columnNames.indexOf(columnName) !== -1)
       {

@@ -2,9 +2,9 @@
 {{ define "-global-/cbwebcommon/datatable.gohtml" }}
 <script type="text/javascript">
   //replace all of the headers with search boxes
-  $('#{{.GetTableId}} thead th').each(
+  $('#{{.GetTableId}} .material-table-searchable').each(
     function () {
-      var title = $('#{{.GetTableId}} thead th').eq($(this).index()).text();
+      var title = $('#{{.GetTableId}} .material-table-searchable').eq($(this).index()).text();
       $(this).html(
         '<input style="width: auto;" type="text" name="' + title + '" placeholder="' + title + '" />');
     }

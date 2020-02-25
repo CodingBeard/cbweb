@@ -2,13 +2,11 @@
 {{ define "-global-/cbwebcommon/flash.gohtml" }}
     {{ if .GetMasterViewModel.Flash.HasMessages "default" }}
       <div class="flash-messages">
-          {{ if . }}
-              {{ range .GetMasterViewModel.Flash.GetMessages "default" }}
-                <div class="chip {{ .Type }}">
-                    {{ .Message }}
-                  <i class="close material-icons">close</i>
-                </div>
-              {{ end }}
+          {{ range .GetMasterViewModel.Flash.GetMessages "default" }}
+            <div class="chip {{ .Type }}">
+                {{ .Message }}
+              <i class="close material-icons">close</i>
+            </div>
           {{ end }}
       </div>
     {{ end }}

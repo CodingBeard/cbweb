@@ -1,0 +1,10 @@
+{{- /*gotype: github.com/codingbeard/cbweb.TypehintingViewModel*/ -}}
+{{ define "-global-/cbwebcommon/flashtoast.gohtml" }}
+    {{ if .GetMasterViewModel.Flash.HasMessages "toast" }}
+      <script type="text/javascript">
+          {{ range .GetMasterViewModel.Flash.GetMessages "toast" }}
+            M.toast({html: {{.Message}}, classes: {{.Type}}});
+          {{ end }}
+      </script>
+    {{ end }}
+{{ end }}

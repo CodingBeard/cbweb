@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/codingbeard/cbweb"
 	"html/template"
 	"io"
 	"regexp"
+	"time"
 )
 
 var extendsRegex *regexp.Regexp
@@ -25,18 +27,34 @@ type templatefile struct {
 }
 
 type InheritanceMultiTemplate struct {
-	templates map[string]templatefile
-	funcs     template.FuncMap
+	templates       map[string]templatefile
+	funcs           template.FuncMap
+	cache           bool
+	cachedTemplates cbweb.CacheProvider
 }
 
-func NewInheritanceMultiTemplate(funcs template.FuncMap) *InheritanceMultiTemplate {
+type Dependencies struct {
+	Funcs         template.FuncMap
+	Cache         bool
+	CacheProvider cbweb.CacheProvider
+}
+
+func NewInheritanceMultiTemplate(dependencies Dependencies) *InheritanceMultiTemplate {
 	return &InheritanceMultiTemplate{
-		templates: make(map[string]templatefile),
-		funcs:     funcs,
+		templates:       make(map[string]templatefile),
+		funcs:           dependencies.Funcs,
+		cache:           dependencies.Cache,
+		cachedTemplates: dependencies.CacheProvider,
 	}
 }
 
 func (m *InheritanceMultiTemplate) AddTemplate(name string, content []byte) error {
+	if m.cache {
+		if _, ok := m.templates[name]; ok {
+			return nil
+		}
+	}
+
 	templ := templatefile{
 		content: content,
 	}
@@ -72,30 +90,22 @@ func (m *InheritanceMultiTemplate) AddTemplate(name string, content []byte) erro
 }
 
 func (m *InheritanceMultiTemplate) ExecuteTemplate(wr io.Writer, name string, data interface{}) error {
-	templ, ok := m.templates[name]
-	if !ok {
-		return errors.New(fmt.Sprintf("template (%s) does not exist", name))
+	var t *template.Template
+	var ok bool
+	cacheKey := "executeTemplate:" + name
+	if m.cachedTemplates != nil {
+		var cache interface{}
+		cache, ok = m.cachedTemplates.Get(cacheKey)
+		if ok {
+			t = cache.(*template.Template)
+		}
 	}
-	t := template.New(name)
-	if templ.layout != "" {
-		layout, ok := m.templates[templ.layout]
+	if !m.cache || !ok {
+		templ, ok := m.templates[name]
 		if !ok {
-			return errors.New(fmt.Sprintf("template layout (%s) does not exist", templ.layout))
+			return errors.New(fmt.Sprintf("template (%s) does not exist", name))
 		}
-
-		templ.content = append(templ.content, layout.content...)
-	}
-	t.Funcs(m.funcs)
-	var e error
-	t, e = t.Parse(string(templ.content))
-	if e != nil {
-		return e
-	}
-
-	for templName, templ := range m.templates {
-		if templName == name {
-			continue
-		}
+		t = template.New(name)
 		if templ.layout != "" {
 			layout, ok := m.templates[templ.layout]
 			if !ok {
@@ -104,10 +114,34 @@ func (m *InheritanceMultiTemplate) ExecuteTemplate(wr io.Writer, name string, da
 
 			templ.content = append(templ.content, layout.content...)
 		}
+		t.Funcs(m.funcs)
 		var e error
 		t, e = t.Parse(string(templ.content))
 		if e != nil {
 			return e
+		}
+
+		for templName, templ := range m.templates {
+			if templName == name {
+				continue
+			}
+			if templ.layout != "" {
+				layout, ok := m.templates[templ.layout]
+				if !ok {
+					return errors.New(fmt.Sprintf("template layout (%s) does not exist", templ.layout))
+				}
+
+				templ.content = append(templ.content, layout.content...)
+			}
+			var e error
+			t, e = t.Parse(string(templ.content))
+			if e != nil {
+				return e
+			}
+		}
+
+		if m.cachedTemplates != nil {
+			m.cachedTemplates.Set(cacheKey, t, time.Hour*24)
 		}
 	}
 

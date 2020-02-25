@@ -1,6 +1,9 @@
 package cbform
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 type Container struct {
 	fields map[string]*Field
@@ -91,6 +94,18 @@ func (f *Field) GetHelp() string {
 
 func (f *Field) GetValue() interface{} {
 	return f.Value
+}
+
+func (f *Field) GetStringValue() string {
+	if stringValue, ok := f.Value.(string); ok {
+		return stringValue
+	}
+
+	return ""
+}
+
+func (f *Field) GetIntValue() (int, error) {
+	return strconv.Atoi(f.GetStringValue())
 }
 
 func (f *Field) GetOptions() []*Option {

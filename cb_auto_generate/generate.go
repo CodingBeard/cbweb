@@ -58,6 +58,13 @@ func main() {
 			OutputPackageName:  "cbwebcommon",
 			OutputFunctionName: "getGlobalDataTableTemplate",
 		},
+		{
+			FileName:           "flashtoast.gohtml",
+			FilePath:           "../module/cbwebcommon/flashtoast.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalflashtoasttemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalFlashToastTemplate",
+		},
 	}
 
 	for _, file := range files {

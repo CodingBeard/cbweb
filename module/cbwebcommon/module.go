@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/codingbeard/cbweb"
 	"github.com/codingbeard/cbweb/templates"
 	"github.com/valyala/fasthttp"
 	"html/template"
@@ -22,6 +23,7 @@ type Module struct {
 	Env              string
 	Version          string
 	BrandName        string
+	TemplateCache    cbweb.CacheProvider
 	FileServer       func(ctx *fasthttp.RequestCtx)
 	FourOFourError   func(ctx *fasthttp.RequestCtx)
 	FiveHundredError func(ctx *fasthttp.RequestCtx)
@@ -78,12 +80,13 @@ func (m *Module) GetFiveHundredError() func(ctx *fasthttp.RequestCtx) {
 
 func (m *Module) GetGlobalTemplates() map[string][]byte {
 	return map[string][]byte{
-		"-global-/cbwebcommon/master.gohtml": getGlobalMasterTemplate(),
-		"-global-/cbwebcommon/nav.gohtml": getGlobalNavTemplate(),
-		"-global-/cbwebcommon/flash.gohtml": getGlobalFlashTemplate(),
-		"-global-/cbwebcommon/inputtext.gohtml": getGlobalInputTextTemplate(),
+		"-global-/cbwebcommon/master.gohtml":      getGlobalMasterTemplate(),
+		"-global-/cbwebcommon/nav.gohtml":         getGlobalNavTemplate(),
+		"-global-/cbwebcommon/flash.gohtml":       getGlobalFlashTemplate(),
+		"-global-/cbwebcommon/inputtext.gohtml":   getGlobalInputTextTemplate(),
 		"-global-/cbwebcommon/inputselect.gohtml": getGlobalInputSelectTemplate(),
-		"-global-/cbwebcommon/datatable.gohtml": getGlobalDataTableTemplate(),
+		"-global-/cbwebcommon/datatable.gohtml":   getGlobalDataTableTemplate(),
+		"-global-/cbwebcommon/flashtoast.gohtml":  getGlobalFlashToastTemplate(),
 	}
 }
 
@@ -123,13 +126,38 @@ func (m *Module) DefaultFileServer(ctx *fasthttp.RequestCtx) {
 	ctx.SetBodyStream(f, int(stat.Size()))
 }
 
+func (m *Module) ExecuteViewModel(ctx *fasthttp.RequestCtx, viewModel cbweb.ExecutableViewModel) error {
+	cacheKey := "ExecuteViewModel:" + viewModel.GetMainTemplate()
+	if m.TemplateCache != nil {
+		if cache, ok := m.TemplateCache.Get(cacheKey); ok {
+			return cache.(*templates.InheritanceMultiTemplate).ExecuteTemplate(ctx, viewModel.GetMainTemplate(), viewModel)
+		}
+	}
+	t, e := m.GenerateTemplate(viewModel.GetTemplates())
+	if e != nil {
+		return e
+	}
+
+	e = t.ExecuteTemplate(ctx, viewModel.GetMainTemplate(), viewModel)
+
+	if m.TemplateCache != nil {
+		m.TemplateCache.Set(cacheKey, t, time.Hour * 24)
+	}
+
+	return e
+}
+
 func (m *Module) GenerateTemplate(fileNames []string) (*templates.InheritanceMultiTemplate, error) {
 	mergedTemplateFuncs := m.getDefaultTemplateFuncs()
 	for key, templateFunc := range m.TemplateFuncs {
 		mergedTemplateFuncs[key] = templateFunc
 	}
 
-	t := templates.NewInheritanceMultiTemplate(mergedTemplateFuncs)
+	t := templates.NewInheritanceMultiTemplate(templates.Dependencies{
+		Funcs:         mergedTemplateFuncs,
+		Cache:         m.TemplateCache != nil,
+		CacheProvider: m.TemplateCache,
+	})
 
 	for templateName, templateBytes := range m.globalTemplates {
 		e := t.AddTemplate(templateName, templateBytes)

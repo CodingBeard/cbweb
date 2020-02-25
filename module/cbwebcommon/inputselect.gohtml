@@ -1,0 +1,12 @@
+{{- /*gotype: github.com/codingbeard/cbweb/cbform.Field*/ -}}
+{{ define "-global-/cbwebcommon/inputselect.gohtml" }}
+    {{if len .GetName}}
+      <select class="{{if .HasError}}invalid{{end}}" name="{{.GetName}}" id="form-{{.GetName}}">
+          {{range .GetOptions}}
+            <option{{if .IsSelected}} selected{{end}}{{if .IsDisabled}} disabled{{end}} value="{{.GetValue}}">{{.GetLabel}}</option>
+          {{end}}
+      </select>
+      <label for="form-{{.GetName}}">{{.GetLabel}}</label>
+      <span class="helper-text" data-error="{{if .HasError}}{{.GetError}}{{else}}{{.GetJsValidationError}}{{end}}" data-success="{{.GetJsValidationSuccess}}"></span>
+    {{end}}
+{{ end }}

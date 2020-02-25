@@ -82,6 +82,8 @@ func (m *Module) GetGlobalTemplates() map[string][]byte {
 		"-global-/cbwebcommon/nav.gohtml": getGlobalNavTemplate(),
 		"-global-/cbwebcommon/flash.gohtml": getGlobalFlashTemplate(),
 		"-global-/cbwebcommon/inputtext.gohtml": getGlobalInputTextTemplate(),
+		"-global-/cbwebcommon/inputselect.gohtml": getGlobalInputSelectTemplate(),
+		"-global-/cbwebcommon/datatable.gohtml": getGlobalDataTableTemplate(),
 	}
 }
 
@@ -178,6 +180,9 @@ func (m *Module) getDefaultCdnUrlTemplateUrl(nonCdnUrl template.URL) string {
 }
 
 func (m *Module) getDefaultCdnUrl(nonCdnUrl string) string {
+	if strings.HasPrefix(nonCdnUrl, "http://") || strings.HasPrefix(nonCdnUrl, "https://") {
+		return nonCdnUrl
+	}
 	if m.Env == "dev" {
 		return nonCdnUrl + "?" + strconv.Itoa(int(time.Now().Unix()))
 	} else {

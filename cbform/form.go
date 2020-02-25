@@ -16,6 +16,14 @@ type Field struct {
 	Error               error
 	Help                string
 	Value               interface{}
+	Options             []*Option
+}
+
+type Option struct {
+	Disabled bool
+	Selected bool
+	Label string
+	Value interface{}
 }
 
 func New(fields ...Field) *Container {
@@ -53,6 +61,10 @@ func (f *Field) GetLabel() string {
 	return f.Label
 }
 
+func (f *Field) HasLabel() bool {
+	return f.Label != ""
+}
+
 func (f *Field) GetJsValidationError() string {
 	return f.JsValidationError
 }
@@ -78,5 +90,25 @@ func (f *Field) GetHelp() string {
 }
 
 func (f *Field) GetValue() interface{} {
+	return f.Value
+}
+
+func (f *Field) GetOptions() []*Option {
+	return f.Options
+}
+
+func (f *Option) GetLabel() string {
+	return f.Label
+}
+
+func (f *Option) IsDisabled() bool {
+	return f.Disabled
+}
+
+func (f *Option) IsSelected() bool {
+	return f.Selected
+}
+
+func (f *Option) GetValue() interface{} {
 	return f.Value
 }

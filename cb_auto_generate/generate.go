@@ -44,6 +44,20 @@ func main() {
 			OutputPackageName:  "cbwebcommon",
 			OutputFunctionName: "getGlobalInputTextTemplate",
 		},
+		{
+			FileName:           "inputselect.gohtml",
+			FilePath:           "../module/cbwebcommon/inputselect.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalinputselecttemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalInputSelectTemplate",
+		},
+		{
+			FileName:           "datatable.gohtml",
+			FilePath:           "../module/cbwebcommon/datatable.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globaldatatabletemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalDataTableTemplate",
+		},
 	}
 
 	for _, file := range files {

@@ -275,7 +275,8 @@ func (a *Provider) Register(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 		return false, validationErrors
 	}
 
-	if checkmail.ValidateHost(string(post.Peek("email"))) != nil {
+	e := checkmail.ValidateHost(string(post.Peek("email")))
+	if errors.Is(e, checkmail.ErrUnresolvableHost) {
 		validationErrors["email"] = errors.New("please provide a real email account")
 	}
 
@@ -320,7 +321,8 @@ func (a *Provider) ChangePassword(ctx *fasthttp.RequestCtx) (bool, map[string]er
 		return false, validationErrors
 	}
 
-	if checkmail.ValidateHost(string(post.Peek("email"))) != nil {
+	e := checkmail.ValidateHost(string(post.Peek("email")))
+	if errors.Is(e, checkmail.ErrUnresolvableHost) {
 		validationErrors["email"] = errors.New("please provide a real email account")
 		return false, validationErrors
 	}

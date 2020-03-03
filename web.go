@@ -12,14 +12,16 @@ type Module interface {
 }
 
 type Server struct {
-	port         string
-	modules      []Module
-	errorHandler ErrorHandler
+	port             string
+	modules          []Module
+	errorHandler     ErrorHandler
+	globalMiddleware *MiddlewareHandler
 }
 
 type Dependencies struct {
-	Port         string
-	ErrorHandler ErrorHandler
+	Port             string
+	ErrorHandler     ErrorHandler
+	GlobalMiddleware *MiddlewareHandler
 }
 
 func NewServer(dependencies Dependencies, modules ...Module) *Server {
@@ -27,9 +29,10 @@ func NewServer(dependencies Dependencies, modules ...Module) *Server {
 		dependencies.ErrorHandler = &DefaultErrorHandler{}
 	}
 	return &Server{
-		port:         dependencies.Port,
-		errorHandler: dependencies.ErrorHandler,
-		modules:      modules,
+		port:             dependencies.Port,
+		errorHandler:     dependencies.ErrorHandler,
+		globalMiddleware: dependencies.GlobalMiddleware,
+		modules:          modules,
 	}
 }
 
@@ -55,7 +58,11 @@ func (s *Server) Start() error {
 
 	e := fasthttp.ListenAndServe(s.port, func(ctx *fasthttp.RequestCtx) {
 		defer s.errorHandler.Recover()
-		routes.Handler(ctx)
+		if s.globalMiddleware == nil {
+			routes.Handler(ctx)
+		} else {
+			s.globalMiddleware.SetFinal(routes.Handler).HandleLimited()(ctx)
+		}
 	})
 
 	return e

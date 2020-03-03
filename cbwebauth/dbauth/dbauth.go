@@ -13,13 +13,13 @@ import (
 )
 
 type Provider struct {
-	lastCache             int64
-	cache                 []UserRecord
-	db                    GormReadWrite
-	log                   Logger
-	secret                string
-	reloadUserRecordsFunc func() []UserRecord
-	generateAuthHashFunc  func(user UserRecord) string
+	db                   GormReadWrite
+	log                  Logger
+	secret               string
+	getUserRecordsFunc   func() []UserRecord
+	generateAuthHashFunc func(user UserRecord) string
+	hashWorkFactor       int
+	saveUserRecordFunc   func(user UserRecord) error
 }
 
 type GormReadWrite interface {
@@ -33,16 +33,20 @@ type Logger interface {
 
 type UserRecord interface {
 	GetEmail() string
+	SetEmail(email string)
 	GetPassword() string
+	SetPassword(password string)
 	GetCreated() time.Time
 }
 
 type Dependencies struct {
-	Db                    GormReadWrite
-	Log                   Logger
-	Secret                string
-	ReloadUserRecordsFunc func() []UserRecord
-	GenerateAuthHashFunc  func(user UserRecord) string
+	Db                   GormReadWrite
+	Log                  Logger
+	Secret               string
+	GetUserRecordsFunc   func() []UserRecord
+	SaveUserRecordFunc   func(user UserRecord) error
+	GenerateAuthHashFunc func(user UserRecord) string
+	HashWorkFactor       int
 }
 
 type UserClaim struct {
@@ -55,31 +59,23 @@ var ProviderName = "dbauth"
 var cookieKey = "cbauth"
 
 func New(dependencies Dependencies) (*Provider, error) {
-	if dependencies.ReloadUserRecordsFunc == nil {
-		return nil, errors.New("missing ReloadUserRecordsFunc")
+	if dependencies.GetUserRecordsFunc == nil {
+		return nil, errors.New("missing GetUserRecordsFunc")
 	}
 	if dependencies.GenerateAuthHashFunc == nil {
 		return nil, errors.New("missing GenerateAuthHashFunc")
 	}
 	auth := &Provider{
-		db:                    dependencies.Db,
-		log:                   dependencies.Log,
-		secret:                dependencies.Secret,
-		reloadUserRecordsFunc: dependencies.ReloadUserRecordsFunc,
-		generateAuthHashFunc:  dependencies.GenerateAuthHashFunc,
+		db:                   dependencies.Db,
+		log:                  dependencies.Log,
+		secret:               dependencies.Secret,
+		getUserRecordsFunc:   dependencies.GetUserRecordsFunc,
+		generateAuthHashFunc: dependencies.GenerateAuthHashFunc,
+		hashWorkFactor:       dependencies.HashWorkFactor,
+		saveUserRecordFunc:   dependencies.SaveUserRecordFunc,
 	}
 
 	return auth, nil
-}
-
-func (a *Provider) reloadUsers() {
-	now := time.Now().Unix()
-	if a.lastCache < now-1 {
-		if a.reloadUserRecordsFunc != nil {
-			a.cache = a.reloadUserRecordsFunc()
-		}
-		a.lastCache = now
-	}
 }
 
 func (a *Provider) getUserFromLoginToken(tokenString string) UserRecord {
@@ -93,7 +89,7 @@ func (a *Provider) getUserFromLoginToken(tokenString string) UserRecord {
 	if token.Valid {
 		userClaim, ok := token.Claims.(*UserClaim)
 		if ok {
-			for _, user := range a.cache {
+			for _, user := range a.getUserRecordsFunc() {
 				if strings.ToLower(user.GetEmail()) == strings.ToLower(userClaim.Email) {
 					authHash := a.generateAuthHashFunc(user)
 					if authHash == userClaim.AuthHash {
@@ -117,7 +113,7 @@ func (a *Provider) getUserFromLoginToken(tokenString string) UserRecord {
 	return nil
 }
 
-func (a *Provider) generateLoginToken(user UserRecord) (string, error) {
+func (a *Provider) GenerateLoginToken(user UserRecord) (string, error) {
 	claims := UserClaim{
 		Email:    user.GetEmail(),
 		AuthHash: a.generateAuthHashFunc(user),
@@ -137,7 +133,13 @@ func (a *Provider) GetProviderName() string {
 }
 
 func (a *Provider) GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string {
-	a.reloadUsers()
+	if ctx.Request.URI().QueryArgs().Has("dbauthtoken") {
+		user := a.getUserFromLoginToken(string(ctx.Request.URI().QueryArgs().Peek("dbauthtoken")))
+		if user != nil {
+			return user.GetEmail()
+		}
+	}
+
 	cookie := ctx.Request.Header.Cookie(cookieKey)
 	if len(cookie) == 0 {
 		return ""
@@ -152,7 +154,10 @@ func (a *Provider) GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string {
 }
 
 func (a *Provider) IsAuthenticated(ctx *fasthttp.RequestCtx) bool {
-	a.reloadUsers()
+	if ctx.Request.URI().QueryArgs().Has("dbauthtoken") {
+		return a.getUserFromLoginToken(string(ctx.Request.URI().QueryArgs().Peek("dbauthtoken"))) != nil
+	}
+
 	cookie := ctx.Request.Header.Cookie(cookieKey)
 	if len(cookie) == 0 {
 		return false
@@ -162,7 +167,6 @@ func (a *Provider) IsAuthenticated(ctx *fasthttp.RequestCtx) bool {
 }
 
 func (a *Provider) Login(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
-	a.reloadUsers()
 	post := ctx.Request.PostArgs()
 	if post != nil && post.Len() > 0 {
 		validationErrors := make(map[string]error)
@@ -183,7 +187,7 @@ func (a *Provider) Login(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 			return false, validationErrors
 		}
 
-		for _, user := range a.cache {
+		for _, user := range a.getUserRecordsFunc() {
 			if strings.ToLower(user.GetEmail()) == strings.ToLower(string(post.Peek("email"))) {
 				if bcrypt.CompareHashAndPassword([]byte(user.GetPassword()), post.Peek("password")) == nil {
 					e := a.SetAuthCookie(ctx, user)
@@ -213,7 +217,7 @@ func (a *Provider) Login(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 }
 
 func (a *Provider) SetAuthCookie(ctx *fasthttp.RequestCtx, user UserRecord) error {
-	token, e := a.generateLoginToken(user)
+	token, e := a.GenerateLoginToken(user)
 	if e != nil {
 		return e
 	}
@@ -240,7 +244,6 @@ func (a *Provider) Logout(ctx *fasthttp.RequestCtx) bool {
 }
 
 func (a *Provider) Register(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
-	a.reloadUsers()
 	post := ctx.Request.PostArgs()
 	if post == nil {
 		return false, map[string]error{"flash": errors.New("invalid request")}
@@ -281,6 +284,71 @@ func (a *Provider) Register(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 	}
 
 	//todo complete registration
+
+	return true, nil
+}
+
+func (a *Provider) ChangePassword(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
+	post := ctx.Request.PostArgs()
+	if post == nil {
+		return false, map[string]error{"flash": errors.New("invalid request")}
+	}
+
+	validationErrors := make(map[string]error)
+
+	if !post.Has("email") {
+		validationErrors["email"] = errors.New("please provide an email")
+	}
+
+	if !post.Has("password") {
+		validationErrors["password"] = errors.New("please provide a password")
+	}
+
+	if !post.Has("password-confirm") {
+		validationErrors["password-confirm"] = errors.New("please confirm your password")
+	}
+
+	if checkmail.ValidateFormat(string(post.Peek("email"))) != nil {
+		validationErrors["email"] = errors.New("please provide a valid email")
+	}
+
+	if bytes.Compare(post.Peek("password"), post.Peek("password-confirm")) != 0 {
+		validationErrors["password-confirm"] = errors.New("please make sure your password confirmation matches your password")
+	}
+
+	if len(validationErrors) > 0 {
+		return false, validationErrors
+	}
+
+	if checkmail.ValidateHost(string(post.Peek("email"))) != nil {
+		validationErrors["email"] = errors.New("please provide a real email account")
+		return false, validationErrors
+	}
+
+	var user UserRecord
+	for _, potentialUser := range a.getUserRecordsFunc() {
+		if strings.ToLower(potentialUser.GetEmail()) == string(post.Peek("email")) {
+			user = potentialUser
+		}
+	}
+
+	if user == nil {
+		validationErrors["email"] = errors.New("that user does not exist")
+		return false, validationErrors
+	}
+
+	password, e := bcrypt.GenerateFromPassword(post.Peek("password"), a.hashWorkFactor)
+	if e != nil {
+		validationErrors["flash"] = errors.New("there was an error changing your password")
+		return false, validationErrors
+	}
+
+	user.SetPassword(string(password))
+	e = a.saveUserRecordFunc(user)
+	if e != nil {
+		validationErrors["flash"] = errors.New("there was an error saving your updated password")
+		return false, validationErrors
+	}
 
 	return true, nil
 }

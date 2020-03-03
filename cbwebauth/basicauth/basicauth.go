@@ -71,6 +71,10 @@ func (p Provider) Register(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
 	return true, make(map[string]error)
 }
 
+func (p Provider) ChangePassword(ctx *fasthttp.RequestCtx) (bool, map[string]error) {
+	return true, make(map[string]error)
+}
+
 func (p Provider) getCredentials(ctx *fasthttp.RequestCtx) (string, string) {
 	auth := ctx.Request.Header.Peek("Authorization")
 	if bytes.HasPrefix(auth, []byte("Basic ")) {

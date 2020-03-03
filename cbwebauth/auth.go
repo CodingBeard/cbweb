@@ -12,6 +12,7 @@ type Provider interface {
 	Login(ctx *fasthttp.RequestCtx) (bool, map[string]error)
 	Logout(ctx *fasthttp.RequestCtx) bool
 	Register(ctx *fasthttp.RequestCtx) (bool, map[string]error)
+	ChangePassword(ctx *fasthttp.RequestCtx) (bool, map[string]error)
 }
 
 type Container struct {
@@ -117,7 +118,22 @@ func (c *Container) Register(providerName string, ctx *fasthttp.RequestCtx) (boo
 	return false, errors.New("auth provider not found"), make(map[string]error)
 }
 
-func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx) (bool, error) {
+func (c *Container) ChangePassword(providerName string, ctx *fasthttp.RequestCtx) (bool, error, map[string]error) {
+	if len(c.providers) == 0 {
+		return true, errors.New("no auth providers configured"), make(map[string]error)
+	}
+
+	for _, provider := range c.providers {
+		if provider.GetProviderName() == providerName {
+			registerSuccess, userErrors := provider.ChangePassword(ctx)
+			return registerSuccess, nil, userErrors
+		}
+	}
+
+	return false, errors.New("auth provider not found"), make(map[string]error)
+}
+
+func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx, redirect string) (bool, error) {
 	if len(c.providers) == 0 {
 		return true, errors.New("no auth providers configured")
 	}
@@ -126,7 +142,9 @@ func (c *Container) Logout(providerName string, ctx *fasthttp.RequestCtx) (bool,
 		if provider.GetProviderName() == providerName {
 			ok := provider.Logout(ctx)
 
-			if c.logoutRedirectUri != "" {
+			if redirect != "" {
+				ctx.Redirect(redirect, 302)
+			} else if c.logoutRedirectUri != "" {
 				ctx.Redirect(c.logoutRedirectUri, 302)
 			}
 

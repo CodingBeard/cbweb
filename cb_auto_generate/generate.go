@@ -52,6 +52,20 @@ func main() {
 			OutputFunctionName: "getGlobalInputSelectTemplate",
 		},
 		{
+			FileName:           "inputchips.gohtml",
+			FilePath:           "../module/cbwebcommon/inputchips.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalinputchipstemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalInputChipsTemplate",
+		},
+		{
+			FileName:           "inputchipsjs.gohtml",
+			FilePath:           "../module/cbwebcommon/inputchipsjs.gohtml",
+			OutputFilePath:     "../module/cbwebcommon/globalinputchipsjstemplate.go",
+			OutputPackageName:  "cbwebcommon",
+			OutputFunctionName: "getGlobalInputChipsJsTemplate",
+		},
+		{
 			FileName:           "datatable.gohtml",
 			FilePath:           "../module/cbwebcommon/datatable.gohtml",
 			OutputFilePath:     "../module/cbwebcommon/globaldatatabletemplate.go",

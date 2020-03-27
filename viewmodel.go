@@ -27,11 +27,39 @@ type ViewInclude struct {
 }
 
 type NavItem struct {
-	Src template.URL
-	Title string
-	Active bool
+	Src         template.URL
+	Title       string
+	Active      bool
 	SubNavItems []NavItem
-	Divider bool
+	Divider     bool
+	Permitted   bool
+}
+
+type NavItemCollection []NavItem
+
+func (n *NavItemCollection) FilterPermitted() []NavItem {
+	return n.filterPermitted(*n)
+}
+
+func (n *NavItemCollection) filterPermitted(navItems NavItemCollection) []NavItem {
+	var newItems []NavItem
+
+	for _, item := range navItems {
+		if len(item.SubNavItems) > 0 {
+			item.SubNavItems = n.filterPermitted(item.SubNavItems)
+			if len(item.SubNavItems) > 0 {
+				newItems = append(newItems, item)
+				continue
+			}
+		} else {
+			if item.Permitted {
+				newItems = append(newItems, item)
+				continue
+			}
+		}
+	}
+
+	return newItems
 }
 
 type MasterViewModel interface {
@@ -45,12 +73,12 @@ type ExecutableViewModel interface {
 
 type DefaultMasterViewModel struct {
 	ViewIncludes []ViewInclude
-	Title string
-	PageTitle string
-	BodyClasses string
-	NavItems []NavItem
-	Path template.URL
-	Flash *Flash
+	Title        string
+	PageTitle    string
+	BodyClasses  string
+	NavItems     []NavItem
+	Path         template.URL
+	Flash        *Flash
 }
 
 func (m DefaultMasterViewModel) GetViewIncludes() []ViewInclude {
@@ -83,7 +111,6 @@ func (m DefaultMasterViewModel) GetFlash() *Flash {
 	}
 	return m.Flash
 }
-
 
 func (h ViewIncludeType) IsJsHead() bool {
 	return h == ViewIncludeType_JsHead

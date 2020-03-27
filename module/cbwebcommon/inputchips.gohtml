@@ -1,0 +1,11 @@
+{{- /*gotype: github.com/codingbeard/cbweb/cbform.Field*/ -}}
+{{ define "-global-/cbwebcommon/inputchips.gohtml" }}
+    {{if len .GetName}}
+        <div class="chips-container">
+          <div class="chips chips-input-{{.GetName}} {{if .HasError}}chips-error{{end}}">
+          </div>
+          <span class="error-text">{{if .HasError}}{{.GetError}}{{end}}</span>
+          <input name="{{.GetName}}" type="hidden" value="" id="form-{{.GetName}}"/>
+        </div>
+    {{end}}
+{{ end }}

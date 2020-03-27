@@ -3,15 +3,15 @@ package basicauth
 import (
 	"bytes"
 	"encoding/base64"
+	"github.com/codingbeard/cbweb/cbwebauth"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/crypto/bcrypt"
-	"strings"
 )
 
 type Credential struct {
 	Username string
 	Password string
-	Uris     []string
+	Permissions []string
 }
 
 type Provider struct {
@@ -34,19 +34,25 @@ func (p Provider) GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string {
 	return user
 }
 
+func (p Provider) GetPermissions(ctx *fasthttp.RequestCtx) []string {
+	user, _ := p.getCredentials(ctx)
+
+	if user != "" {
+		for _, credential := range p.Credentials {
+			if credential.Username == user {
+				return append(credential.Permissions, cbwebauth.LoggedIn)
+			}
+		}
+	}
+
+	return []string{}
+}
+
 func (p Provider) IsAuthenticated(ctx *fasthttp.RequestCtx) bool {
 	user, pass := p.getCredentials(ctx)
 	for _, credential := range p.Credentials {
 		if credential.Username == user && bcrypt.CompareHashAndPassword([]byte(credential.Password), []byte(pass)) == nil {
-			for _, uri := range credential.Uris {
-				if uri == "*" {
-					return true
-				}
-
-				if strings.HasSuffix(uri, "*") && strings.HasPrefix(string(ctx.URI().Path()), uri[:len(uri)-1]) {
-					return true
-				}
-			}
+			return true
 		}
 	}
 

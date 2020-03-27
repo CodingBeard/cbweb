@@ -3,6 +3,7 @@ package dbauth
 import (
 	"bytes"
 	"errors"
+	"github.com/codingbeard/cbweb/cbwebauth"
 	"github.com/codingbeard/checkmail"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
@@ -37,6 +38,7 @@ type UserRecord interface {
 	GetPassword() string
 	SetPassword(password string)
 	GetCreated() time.Time
+	GetPermissions() []string
 }
 
 type Dependencies struct {
@@ -151,6 +153,27 @@ func (a *Provider) GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string {
 	}
 
 	return user.GetEmail()
+}
+
+func (a *Provider) GetPermissions(ctx *fasthttp.RequestCtx) []string {
+	if ctx.Request.URI().QueryArgs().Has("dbauthtoken") {
+		user := a.getUserFromLoginToken(string(ctx.Request.URI().QueryArgs().Peek("dbauthtoken")))
+		if user != nil {
+			return append(user.GetPermissions(), cbwebauth.LoggedIn)
+		}
+	}
+
+	cookie := ctx.Request.Header.Cookie(cookieKey)
+	if len(cookie) == 0 {
+		return []string{}
+	}
+
+	user := a.getUserFromLoginToken(string(cookie))
+	if user == nil {
+		return []string{}
+	}
+
+	return append(user.GetPermissions(), cbwebauth.LoggedIn)
 }
 
 func (a *Provider) IsAuthenticated(ctx *fasthttp.RequestCtx) bool {

@@ -5,9 +5,15 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+var (
+	LoggedIn  = "logged-in"
+	LoggedOut = "logged-out"
+)
+
 type Provider interface {
 	GetProviderName() string
 	GetUniqueIdentifier(ctx *fasthttp.RequestCtx) string
+	GetPermissions(ctx *fasthttp.RequestCtx) []string
 	IsAuthenticated(ctx *fasthttp.RequestCtx) bool
 	Login(ctx *fasthttp.RequestCtx) (bool, map[string]error)
 	Logout(ctx *fasthttp.RequestCtx) bool

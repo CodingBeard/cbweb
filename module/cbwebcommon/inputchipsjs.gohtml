@@ -1,0 +1,46 @@
+{{- /*gotype: github.com/codingbeard/cbweb/cbform.Field*/ -}}
+{{ define "-global-/cbwebcommon/inputchipsjs.gohtml" }}
+    <script type="text/javascript">
+      let element = $('.chips-input-{{.GetName}}');
+      element.chips({
+        placeholder: '{{.GetLabel}}',
+        autocompleteOptions: {
+          data:      {
+            {{range .GetOptions}}
+              '{{.GetLabel}}': null,
+            {{end}}
+          },
+          limit:     Infinity,
+          minLength: 1
+        },
+        data: [
+          {{range .GetOptions}}
+            {{if .IsSelected}}
+              {tag: '{{.GetLabel}}'},
+            {{end}}
+          {{end}}
+        ],
+        onChipAdd: function (el) {
+          if (element.hasClass("chips-error")) {
+            element.removeClass("chips-error");
+            let error = element.parent().find(".error-text");
+            if (error.length > 0) {
+              error.empty();
+            }
+          }
+          let value = "";
+          $.each(M.Chips.getInstance(element).chipsData, function (k, v) {
+            value += v.tag + ","
+          });
+          $('#form-{{.GetName}}').val(value.slice(0, -1));
+        },
+        onChipDelete: function (el) {
+          let value = "";
+          $.each(M.Chips.getInstance(element).chipsData, function (k, v) {
+            value += v.tag + ","
+          });
+          $('#form-{{.GetName}}').val(value.slice(0, -1));
+        },
+      });
+    </script>
+{{ end }}

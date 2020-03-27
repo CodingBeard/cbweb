@@ -85,6 +85,8 @@ func (m *Module) GetGlobalTemplates() map[string][]byte {
 		"-global-/cbwebcommon/flash.gohtml":       getGlobalFlashTemplate(),
 		"-global-/cbwebcommon/inputtext.gohtml":   getGlobalInputTextTemplate(),
 		"-global-/cbwebcommon/inputselect.gohtml": getGlobalInputSelectTemplate(),
+		"-global-/cbwebcommon/inputchips.gohtml":  getGlobalInputChipsTemplate(),
+		"-global-/cbwebcommon/inputchipsjs.gohtml":  getGlobalInputChipsJsTemplate(),
 		"-global-/cbwebcommon/datatable.gohtml":   getGlobalDataTableTemplate(),
 		"-global-/cbwebcommon/flashtoast.gohtml":  getGlobalFlashToastTemplate(),
 	}
@@ -141,7 +143,7 @@ func (m *Module) ExecuteViewModel(ctx *fasthttp.RequestCtx, viewModel cbweb.Exec
 	e = t.ExecuteTemplate(ctx, viewModel.GetMainTemplate(), viewModel)
 
 	if m.TemplateCache != nil {
-		m.TemplateCache.Set(cacheKey, t, time.Hour * 24)
+		m.TemplateCache.Set(cacheKey, t, time.Hour*24)
 	}
 
 	return e

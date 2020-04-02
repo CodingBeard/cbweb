@@ -35,3 +35,21 @@ func (f *Flash) HasMessages(group string) bool {
 
 	return len(f.Messages[group]) > 0
 }
+
+func (f *Flash) HasMessageType(group, messageType string) bool {
+	if f.Messages == nil {
+		return false
+	}
+
+	if len(f.Messages[group]) == 0 {
+		return false
+	}
+
+	for _, message := range f.Messages[group] {
+		if message.Type == messageType {
+			return true
+		}
+	}
+
+	return false
+}

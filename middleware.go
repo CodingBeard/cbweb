@@ -94,3 +94,9 @@ func HtmlMiddleware(ctx *fasthttp.RequestCtx) (bool, error) {
 
 	return true, nil
 }
+
+func JsonMiddleware(ctx *fasthttp.RequestCtx) (bool, error) {
+	ctx.SetContentType("text/json")
+
+	return true, nil
+}

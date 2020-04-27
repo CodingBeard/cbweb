@@ -80,15 +80,15 @@ func (m *Module) GetFiveHundredError() func(ctx *fasthttp.RequestCtx) {
 
 func (m *Module) GetGlobalTemplates() map[string][]byte {
 	return map[string][]byte{
-		"-global-/cbwebcommon/master.gohtml":      getGlobalMasterTemplate(),
-		"-global-/cbwebcommon/nav.gohtml":         getGlobalNavTemplate(),
-		"-global-/cbwebcommon/flash.gohtml":       getGlobalFlashTemplate(),
-		"-global-/cbwebcommon/inputtext.gohtml":   getGlobalInputTextTemplate(),
-		"-global-/cbwebcommon/inputselect.gohtml": getGlobalInputSelectTemplate(),
-		"-global-/cbwebcommon/inputchips.gohtml":  getGlobalInputChipsTemplate(),
-		"-global-/cbwebcommon/inputchipsjs.gohtml":  getGlobalInputChipsJsTemplate(),
-		"-global-/cbwebcommon/datatable.gohtml":   getGlobalDataTableTemplate(),
-		"-global-/cbwebcommon/flashtoast.gohtml":  getGlobalFlashToastTemplate(),
+		"-global-/cbwebcommon/master.gohtml":       getGlobalMasterTemplate(),
+		"-global-/cbwebcommon/nav.gohtml":          getGlobalNavTemplate(),
+		"-global-/cbwebcommon/flash.gohtml":        getGlobalFlashTemplate(),
+		"-global-/cbwebcommon/inputtext.gohtml":    getGlobalInputTextTemplate(),
+		"-global-/cbwebcommon/inputselect.gohtml":  getGlobalInputSelectTemplate(),
+		"-global-/cbwebcommon/inputchips.gohtml":   getGlobalInputChipsTemplate(),
+		"-global-/cbwebcommon/inputchipsjs.gohtml": getGlobalInputChipsJsTemplate(),
+		"-global-/cbwebcommon/datatable.gohtml":    getGlobalDataTableTemplate(),
+		"-global-/cbwebcommon/flashtoast.gohtml":   getGlobalFlashToastTemplate(),
 	}
 }
 
@@ -237,4 +237,9 @@ func (m *Module) DefaultFiveHundredError(ctx *fasthttp.RequestCtx) {
 func (m *Module) DefaultFourOFourError(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(404)
 	_, _ = fmt.Fprint(ctx, `Error: 404 Not Found`)
+}
+
+func (m *Module) Redirect(ctx *fasthttp.RequestCtx, uri string) {
+	ctx.Response.Header.Set("Location", uri)
+	ctx.Response.SetStatusCode(fasthttp.StatusFound)
 }

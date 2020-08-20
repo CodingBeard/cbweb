@@ -13,6 +13,16 @@
     }
   );
 
+  let editableColumns = [
+      {{range .GetColumns}}
+    {
+      editable: {{if .GetEditable}}true{{else}}false{{end}},
+      name: "{{.GetTitle}}",
+      editableName: "{{.GetEditableName}}"
+    },
+      {{end}}
+  ];
+
   // DataTable
   let {{.GetTableId}} = $('#{{.GetTableId}}').DataTable(
     {
@@ -40,7 +50,26 @@
           text:     '<i class="material-icons">file_download</i>'
         }
       ],
-      bAutoWidth:  false
+      bAutoWidth:  false,
+      drawCallback: function () {
+        $('#{{.GetTableId}} .material-table-edit-row').off('click').on('click', function (evt) {
+          let data = {};
+          $(this).parent().parent().find("td").each(
+            function (k, v) {
+              if (editableColumns[k].editable) {
+                let value = $(this).text();
+                if (value !== "") {
+                  data[editableColumns[k].editableName] = value;
+                }
+              }
+            }
+          );
+
+          if (typeof dataTableEditCallback != "undefined" && typeof dataTableEditCallback["{{.GetTableId}}"] == "function") {
+            dataTableEditCallback["{{.GetTableId}}"](data);
+          }
+        });
+      }
     }
   );
 
@@ -148,16 +177,6 @@
       }
     }
   }
-
-  let editableColumns = [
-      {{range .GetColumns}}
-    {
-      editable: {{if .GetEditable}}true{{else}}false{{end}},
-      name: "{{.GetTitle}}",
-      editableName: "{{.GetEditableName}}"
-    },
-      {{end}}
-  ];
 
   $('#{{.GetTableId}} .material-table-edit-row').on('click', function (evt) {
     let data = {};

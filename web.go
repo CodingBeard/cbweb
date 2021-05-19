@@ -12,16 +12,18 @@ type Module interface {
 }
 
 type Server struct {
-	port             string
-	modules          []Module
-	errorHandler     ErrorHandler
-	globalMiddleware *MiddlewareHandler
+	port               string
+	maxRequestBodySize int
+	modules            []Module
+	errorHandler       ErrorHandler
+	globalMiddleware   *MiddlewareHandler
 }
 
 type Dependencies struct {
-	Port             string
-	ErrorHandler     ErrorHandler
-	GlobalMiddleware *MiddlewareHandler
+	Port               string
+	MaxRequestBodySize int
+	ErrorHandler       ErrorHandler
+	GlobalMiddleware   *MiddlewareHandler
 }
 
 func NewServer(dependencies Dependencies, modules ...Module) *Server {
@@ -29,10 +31,11 @@ func NewServer(dependencies Dependencies, modules ...Module) *Server {
 		dependencies.ErrorHandler = &DefaultErrorHandler{}
 	}
 	return &Server{
-		port:             dependencies.Port,
-		errorHandler:     dependencies.ErrorHandler,
-		globalMiddleware: dependencies.GlobalMiddleware,
-		modules:          modules,
+		port:               dependencies.Port,
+		maxRequestBodySize: dependencies.MaxRequestBodySize,
+		errorHandler:       dependencies.ErrorHandler,
+		globalMiddleware:   dependencies.GlobalMiddleware,
+		modules:            modules,
 	}
 }
 
@@ -56,14 +59,19 @@ func (s *Server) Start() error {
 		module.SetGlobalTemplates(globalTemplates)
 	}
 
-	e := fasthttp.ListenAndServe(s.port, func(ctx *fasthttp.RequestCtx) {
-		defer s.errorHandler.Recover()
-		if s.globalMiddleware == nil {
-			routes.Handler(ctx)
-		} else {
-			s.globalMiddleware.SetFinal(routes.Handler).HandleLimited()(ctx)
-		}
-	})
+	server := fasthttp.Server{
+		MaxRequestBodySize: s.maxRequestBodySize,
+		Handler: func(ctx *fasthttp.RequestCtx) {
+			defer s.errorHandler.Recover()
+			if s.globalMiddleware == nil {
+				routes.Handler(ctx)
+			} else {
+				s.globalMiddleware.SetFinal(routes.Handler).HandleLimited()(ctx)
+			}
+		},
+	}
+
+	e := server.ListenAndServe(s.port)
 
 	return e
 }

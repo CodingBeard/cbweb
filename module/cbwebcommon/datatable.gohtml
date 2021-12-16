@@ -32,6 +32,11 @@
         {{if .IsAjax}}
       ajax:        {{.GetAjaxRoute}},
         {{end}}
+        {{if .GroupByColumn}}
+      "columnDefs": [
+        { "visible": false, "targets": {{.GroupColumnOffset}} }
+      ],
+        {{end}}
       "oLanguage": {
         "sInfo":       "_START_-_END_ of _TOTAL_",
         "sLengthMenu": '<span>Rows per page:</span><select class="browser-default">' +
@@ -69,6 +74,21 @@
             dataTableEditCallback["{{.GetTableId}}"](data);
           }
         });
+        {{if .GroupByColumn}}
+        let api = this.api();
+        let rows = api.rows( {page:'current'} ).nodes();
+        let last = null;
+
+        api.column({{.GroupColumnOffset}}, {page:'current'} ).data().each( function ( group, i ) {
+          if ( last !== group ) {
+            $(rows).eq( i ).before(
+                    '<tr class="group"><td>'+group+'</td></tr>'
+            );
+
+            last = group;
+          }
+        } );
+        {{end}}
       }
     }
   );

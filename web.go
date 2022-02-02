@@ -45,6 +45,8 @@ func (s *Server) AddModule(module Module) {
 
 func (s *Server) Start() error {
 	routes := router.New()
+	routes.RedirectTrailingSlash = false
+	routes.RedirectFixedPath = false
 
 	globalTemplates := make(map[string][]byte)
 

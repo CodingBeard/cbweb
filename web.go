@@ -1,6 +1,8 @@
 package cbweb
 
 import (
+	"errors"
+	"fmt"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 )
@@ -64,7 +66,17 @@ func (s *Server) Start() error {
 	server := fasthttp.Server{
 		MaxRequestBodySize: s.maxRequestBodySize,
 		Handler: func(ctx *fasthttp.RequestCtx) {
-			defer s.errorHandler.Recover()
+			defer func() {
+				rec := recover()
+				if rec != nil {
+					if e, ok := rec.(error); ok {
+						s.errorHandler.Error(e)
+					} else {
+						s.errorHandler.Error(errors.New(fmt.Sprint(rec)))
+					}
+					ctx.Response.SetStatusCode(500)
+				}
+			}()
 			if s.globalMiddleware == nil {
 				routes.Handler(ctx)
 			} else {

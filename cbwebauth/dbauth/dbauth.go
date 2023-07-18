@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/codingbeard/cbweb/cbwebauth"
 	"github.com/codingbeard/checkmail"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/jinzhu/gorm"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/crypto/bcrypt"

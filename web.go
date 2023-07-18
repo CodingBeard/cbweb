@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
+	"os"
+	"os/signal"
 )
 
 type Module interface {
@@ -88,4 +90,25 @@ func (s *Server) Start() error {
 	e := server.ListenAndServe(s.port)
 
 	return e
+}
+
+func (s *Server) RunAndCatch(catch map[os.Signal]func()) {
+	var signals []os.Signal
+	for toCatch := range catch {
+		signals = append(signals, toCatch)
+	}
+	caught := make(chan os.Signal, 1)
+	signal.Notify(caught, signals...)
+
+	go func() {
+		e := s.Start()
+		if e != nil {
+			s.errorHandler.Error(e)
+		}
+	}()
+
+	sig := <-caught
+	if fun, ok := catch[sig]; ok && fun != nil {
+		fun()
+	}
 }

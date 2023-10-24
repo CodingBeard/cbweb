@@ -8,7 +8,7 @@ require (
 	github.com/didip/tollbooth_fasthttp v0.0.0-20170910065828-cfa276ddefe2
 	github.com/fasthttp/router v1.4.19
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/jinzhu/gorm v1.9.12
+	github.com/jinzhu/gorm v1.9.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/valyala/fasthttp v1.47.0
 	golang.org/x/crypto v0.10.0 // indirect
